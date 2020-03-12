@@ -11,3 +11,9 @@
 /build
 /captures
 .externalNativeBuild
+app/release/output.json
+app/release/app-release.apk
+.idea/vcs.xml
+.idea/runConfigurations.xml
+.idea/misc.xml
+.idea/gradle.xml
