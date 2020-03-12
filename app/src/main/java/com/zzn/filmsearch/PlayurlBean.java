@@ -9,6 +9,15 @@ public class PlayurlBean {
 
     private String url;
     private String name;
+    private boolean ischeck;
+
+    public boolean isIscheck() {
+        return ischeck;
+    }
+
+    public void setIscheck(boolean ischeck) {
+        this.ischeck = ischeck;
+    }
 
     public String getName() {
         return name;

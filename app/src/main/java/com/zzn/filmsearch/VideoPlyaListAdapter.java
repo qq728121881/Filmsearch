@@ -2,6 +2,7 @@ package com.zzn.filmsearch;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -63,10 +64,14 @@ public class VideoPlyaListAdapter extends RecyclerView.Adapter<VideoPlyaListAdap
         if (datas != null) {
             if (datas.size() == 1) {
                 holder.context.setText("播放");
+
             } else {
                 holder.context.setText("第" + (position + 1) + "集");
-            }
 
+            }
+            if (datas.get(position).isIscheck()) {
+                holder.context.setTextColor(Color.RED);
+            }
 
         }
         holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -89,7 +94,7 @@ public class VideoPlyaListAdapter extends RecyclerView.Adapter<VideoPlyaListAdap
 //               context.startActivity(intent);
 
                 PlayUrlEvent event = new PlayUrlEvent();
-                event.setPosition(position+1);
+                event.setPosition(position + 1);
                 event.setUrl(datas.get(position).getUrl());
                 EventBus.getDefault().post(event);
             }

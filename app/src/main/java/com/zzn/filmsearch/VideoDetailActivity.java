@@ -164,17 +164,25 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         //获取HTML页面中的所有链接
         Elements links = play_2.select("li");
 
-
-        for (Element link : links) {
-            Log.e("zzn", "link : " + "text :" + link.text());
-            String text = link.text();
+        for (int a = 0; a < links.size(); a++) {
+            Log.e("zzn", "link : " + "text :" + links.get(a).text());
+            String text = links.get(a).text();
             String playurl = text.substring(text.indexOf("$") + 1);
 
             PlayurlBean bean = new PlayurlBean();
+            if (a == 0) {
+                bean.setIscheck(true);
+            } else {
+                bean.setIscheck(false);
+            }
             bean.setName(name);
             bean.setUrl(playurl);
             playurlBeans.add(bean);
+
+
         }
+
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -196,13 +204,13 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
     }
 
     private void PlayVideo(String url) {
-                                //自动执行点击事件
-                        detailPlayer.getStartButton().post(new Runnable() {
-                            @Override
-                            public void run() {
-                                detailPlayer.getStartButton().performClick();
-                            }
-                        });
+        //自动执行点击事件
+        detailPlayer.getStartButton().post(new Runnable() {
+            @Override
+            public void run() {
+                detailPlayer.getStartButton().performClick();
+            }
+        });
 
         //增加封面
         ImageView imageView = new ImageView(this);
@@ -330,6 +338,18 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void Plya(PlayUrlEvent playUrlEvent) {
         posstion = playUrlEvent.getPosition();
+
+        for (int a = 0; a < playurlBeans.size(); a++) {
+            if (a == (posstion - 1)) {
+                playurlBeans.get(a).setIscheck(true);
+            } else {
+                playurlBeans.get(a).setIscheck(false);
+            }
+
+        }
+
+        plyaListAdapter.notifyDataSetChanged();
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -340,7 +360,6 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         });
 
     }
-
 
 
 }
