@@ -16,6 +16,14 @@ import android.widget.Toast;
 
 import com.blankj.utilcode.util.KeyboardUtils;
 import com.jcodecraeer.xrecyclerview.XRecyclerView;
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.adapter.Call;
+import com.lzy.okgo.callback.FileCallback;
+import com.lzy.okgo.model.Progress;
+import com.lzy.okgo.model.Response;
+import com.lzy.okgo.request.GetRequest;
+import com.lzy.okserver.OkDownload;
+import com.lzy.okserver.download.DownloadTask;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshLayout;
 import com.scwang.smartrefresh.layout.listener.OnRefreshListener;
@@ -26,6 +34,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.File;
 import java.io.IOException;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -98,9 +107,46 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
 
         onClick();
 
+        String url="http://zuida.downzuida.com/2001/A情公寓5-30.mp4";
+
+        GetRequest<File> request = OkGo.<File>get(url); //构建下载请求
+        DownloadTask task = OkDownload.request("66", request); //创建下载任务，tag为一个任务的唯一标示
+        task.register(new com.lzy.okserver.download.DownloadListener("66") {
+            @Override
+            public void onStart(Progress progress) {
+            }
+
+            @Override
+            public void onProgress(Progress progress) {
+
+                Log.e("zzn", progress.currentSize+"");
+            }
+
+            @Override
+            public void onError(Progress progress) {
+            }
+
+            @Override
+            public void onFinish(File file, Progress progress) {
+
+            }
+
+            @Override
+            public void onRemove(Progress progress) {
+            }
+        }).save();
+        task.fileName("update.zip"); //设置下载的文件名
+        task.start(); //开始或继续下载
+
+//        task.restart(); //重新下载
+//        task.pause(); //暂停下载
+//        task.remove(); //删除下载，只删除记录，不删除文件
+//        task.remove(true); //删除下载，同时删除记录和文件
+
 
 
     }
+
 
     private void onClick() {
         videoListAdapter.setClickCallBack(new VideoListAdapter.ItemClickCallBack() {
