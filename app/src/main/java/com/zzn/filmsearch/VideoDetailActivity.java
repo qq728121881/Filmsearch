@@ -3,18 +3,25 @@ package com.zzn.filmsearch;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.google.android.exoplayer2.SeekParameters;
 import com.jcodecraeer.xrecyclerview.XRecyclerView;
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.request.GetRequest;
+import com.lzy.okserver.OkDownload;
+import com.lzy.okserver.download.DownloadTask;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshLayout;
 import com.scwang.smartrefresh.layout.listener.OnRefreshListener;
@@ -26,6 +33,9 @@ import com.shuyu.gsyvideoplayer.listener.LockClickListener;
 import com.shuyu.gsyvideoplayer.player.PlayerFactory;
 import com.shuyu.gsyvideoplayer.utils.OrientationUtils;
 import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
+import com.zzn.filmsearch.bean.DownLink;
+import com.zzn.filmsearch.bean.VIdeoMoeld;
+import com.zzn.filmsearch.utils.LogDownloadListener;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -35,15 +45,16 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import tv.danmaku.ijk.media.exo2.Exo2PlayerManager;
 import tv.danmaku.ijk.media.exo2.ExoPlayerCacheManager;
 
@@ -63,6 +74,12 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
     SmartRefreshLayout refreshLayout;
     @Bind(R.id.date_ll)
     LinearLayout dateLl;
+    @Bind(R.id.speed_rl)
+    RelativeLayout speedRl;
+    @Bind(R.id.spinner)
+    Spinner spinner;
+    @Bind(R.id.upload_but)
+    Button uploadBut;
     private String url;
     private VideoPlyaListAdapter plyaListAdapter;
 
@@ -77,6 +94,13 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
     private OrientationUtils orientationUtils;
     private String name;
     private int posstion;//多少集
+    private String[] speedBeans;
+    private GSYVideoOptionBuilder gsyVideoOption;
+    private String imagesrc;
+    private VIdeoMoeld vIdeoMoeld;
+    private String playurl;
+
+    private List<DownLink> downLinks = new ArrayList<>();//下载链接
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +115,10 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         PlayerFactory.setPlayManager(Exo2PlayerManager.class);
         //exo缓存模式，支持m3u8，只支持exo
         CacheFactory.setCacheManager(ExoPlayerCacheManager.class);
+
+
+        speedBeans = new String[]{"倍速", "1.0", "1.25", "1.5", "2.0", "2.5"};
+
         inview();
 
 
@@ -107,17 +135,30 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
 
         refreshLayout.autoRefresh(100);
 
-//        plyaListAdapter.setClickCallBack(new VideoPlyaListAdapter.ItemClickCallBack() {
-//            @Override
-//            public void onItemClick(int pos, PlayurlBean bean) {
-//                Intent intent = new Intent(new Intent(VideoDetailActivity.this, PlayvideoActivity.class));
-//                intent.putExtra("Url", bean.getUrl());
-//                startActivity(intent);
-//
-//
-//            }
-//        });
+        ArrayAdapter<String> stringArrayAdapter = new ArrayAdapter<String>(VideoDetailActivity.this, R.layout.spinner_topbar, speedBeans);
+        stringArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
+        spinner.setAdapter(stringArrayAdapter);
+        spinner.setSelection(0);
 
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                if (gsyVideoOption != null) {
+                    if (position == 0) {
+
+                    } else {
+                        gsyVideoOption.setSpeed(1.5f);
+                    }
+                }
+
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
 
     }
 
@@ -151,8 +192,12 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         Elements vodImg = body.getElementsByClass("lazy");
         Elements info = body.getElementsByClass("vodh");
         Elements more = body.getElementsByClass("more");
+        Element down_1 = body.getElementById("down_1");
+        Elements li = down_1.select("li");
 
-        String Imagesrc = vodImg.attr("src");//图片地址
+
+        //图片地址
+        imagesrc = vodImg.attr("src");
         Elements h2 = info.select("h2");
         //片名
         name = h2.text();
@@ -167,7 +212,7 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         for (int a = 0; a < links.size(); a++) {
             Log.e("zzn", "link : " + "text :" + links.get(a).text());
             String text = links.get(a).text();
-            String playurl = text.substring(text.indexOf("$") + 1);
+            playurl = text.substring(text.indexOf("$") + 1);
 
             PlayurlBean bean = new PlayurlBean();
             if (a == 0) {
@@ -183,17 +228,38 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         }
 
 
+        //下载的链接
+        for (int a = 0; a < li.size(); a++) {
+            Log.e("zzn", "link : " + "text :" + links.get(a).text());
+            String text = li.get(a).text();
+            String downlike = text.substring(text.indexOf("$") + 1);
+
+            DownLink link = new DownLink();
+            link.setLink(downlike);
+            downLinks.add(link);
+        }
+
+
+        if(links.size()==1){
+            posstion = 0;
+        }else {
+            posstion = 1;
+        }
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Glide.with(VideoDetailActivity.this).load(Imagesrc).into(image);
+                Glide.with(VideoDetailActivity.this).load(imagesrc).into(image);
                 nameTv.setText(name);
                 contentTv.setText(context);
 
                 plyaListAdapter.setDatas(playurlBeans);
 
-                posstion = 1;
+
+
                 String url = playurlBeans.get(0).getUrl();
+
+//                PlayVideoList();
                 PlayVideo(url);
             }
         });
@@ -203,6 +269,19 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
 
     }
 
+    /**
+     * 列表播放
+     */
+    private void PlayVideoList() {
+
+
+    }
+
+    /**
+     * 自动播放
+     *
+     * @param url
+     */
     private void PlayVideo(String url) {
         //自动执行点击事件
         detailPlayer.getStartButton().post(new Runnable() {
@@ -226,7 +305,8 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         //初始化不打开外部的旋转
         orientationUtils.setEnable(false);
 
-        GSYVideoOptionBuilder gsyVideoOption = new GSYVideoOptionBuilder();
+
+        gsyVideoOption = new GSYVideoOptionBuilder();
         gsyVideoOption.setThumbImageView(imageView)
                 .setIsTouchWiget(true)
                 .setRotateViewAuto(true)
@@ -277,6 +357,7 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
                 detailPlayer.startWindowFullscreen(VideoDetailActivity.this, true, true);
             }
         });
+
 
     }
 
@@ -362,4 +443,48 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
     }
 
 
+    @OnClick({R.id.content_tv, R.id.upload_but})
+    public void onViewClicked(View view) {
+        switch (view.getId()) {
+            case R.id.content_tv:
+                break;
+            case R.id.upload_but:
+
+                //缓存
+                vIdeoMoeld = new VIdeoMoeld();
+                vIdeoMoeld.setName(name + "第" + posstion + "集");
+                vIdeoMoeld.setUrl(downLinks.get(posstion).getLink());
+                vIdeoMoeld.setIconurl(imagesrc);
+
+                if (OkDownload.getInstance().getTask(downLinks.get(posstion).getLink()) == null) {
+                    String link = downLinks.get(posstion).getLink();
+                    download(link);//缓存
+                    Toast.makeText(VideoDetailActivity.this, "已添加到缓存", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(VideoDetailActivity.this, "已缓存", Toast.LENGTH_LONG).show();
+                }
+
+
+
+
+                break;
+        }
+    }
+
+
+    private void download(String url) {
+
+
+        //这里只是演示，表示请求可以传参，怎么传都行，和okgo使用方法一样
+        GetRequest<File> request = OkGo.<File>get(url);
+
+
+        //这里第一个参数是tag，代表下载任务的唯一标识，传任意字符串都行，需要保证唯一,我这里用url作为了tag
+        OkDownload.request(url, request)//
+                .extra1(vIdeoMoeld)//
+                .save()//
+                .register(new LogDownloadListener())//
+                .fileName(vIdeoMoeld.getName())//设置下载的文件名
+                .start();
+    }
 }

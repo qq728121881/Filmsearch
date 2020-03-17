@@ -1,12 +1,19 @@
 package com.zzn.filmsearch;
 
+import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -16,33 +23,29 @@ import android.widget.Toast;
 
 import com.blankj.utilcode.util.KeyboardUtils;
 import com.jcodecraeer.xrecyclerview.XRecyclerView;
-import com.lzy.okgo.OkGo;
-import com.lzy.okgo.adapter.Call;
-import com.lzy.okgo.callback.FileCallback;
-import com.lzy.okgo.model.Progress;
-import com.lzy.okgo.model.Response;
-import com.lzy.okgo.request.GetRequest;
-import com.lzy.okserver.OkDownload;
-import com.lzy.okserver.download.DownloadTask;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshLayout;
 import com.scwang.smartrefresh.layout.listener.OnRefreshListener;
-import com.shuyu.gsyvideoplayer.player.PlayerFactory;
+import com.zzn.filmsearch.ui.AllDownActivity;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.File;
 import java.io.IOException;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import butterknife.Bind;
 import butterknife.ButterKnife;
-import tv.danmaku.ijk.media.exo2.Exo2PlayerManager;
+import butterknife.OnClick;
+import permissions.dispatcher.NeedsPermission;
+import permissions.dispatcher.RuntimePermissions;
 
+@RuntimePermissions
 public class MainActivity extends AppCompatActivity implements TextWatcher, OnRefreshListener {
 
     @Bind(R.id.ed_text)
@@ -62,7 +65,11 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
     XRecyclerView recyclerView;
     @Bind(R.id.date_ll)
     LinearLayout dateLl;
+    @Bind(R.id.my_but)
+    Button myBut;
     private VideoListAdapter videoListAdapter;
+    private AlphaAnimation alphaAniShow;
+    private AlphaAnimation alphaAniHide;
 
 
     @Override
@@ -70,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        MainActivityPermissionsDispatcher.getLocationWithCheck(this);
 
         refreshLayout.setOnRefreshListener(this);
 
@@ -107,42 +115,47 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
 
         onClick();
 
-        String url="http://zuida.downzuida.com/2001/A情公寓5-30.mp4";
 
-        GetRequest<File> request = OkGo.<File>get(url); //构建下载请求
-        DownloadTask task = OkDownload.request("66", request); //创建下载任务，tag为一个任务的唯一标示
-        task.register(new com.lzy.okserver.download.DownloadListener("66") {
-            @Override
-            public void onStart(Progress progress) {
-            }
-
-            @Override
-            public void onProgress(Progress progress) {
-
-                Log.e("zzn", progress.currentSize+"");
-            }
-
-            @Override
-            public void onError(Progress progress) {
-            }
-
-            @Override
-            public void onFinish(File file, Progress progress) {
-
-            }
-
-            @Override
-            public void onRemove(Progress progress) {
-            }
-        }).save();
-        task.fileName("update.zip"); //设置下载的文件名
-        task.start(); //开始或继续下载
+//
+//        String url="http://zuida.downzuida.com/2001/A情公寓5-30.mp4";
+//
+//        GetRequest<File> request = OkGo.<File>get(url); //构建下载请求
+//        DownloadTask task = OkDownload.request(url, request); //创建下载任务，tag为一个任务的唯一标示
+//        task.register(new com.lzy.okserver.download.DownloadListener("66") {
+//            @Override
+//            public void onStart(Progress progress) {
+//            }
+//
+//            @Override
+//            public void onProgress(Progress progress) {
+//
+//                Log.e("zzn", "totalSize:"+(progress.currentSize * 100 / progress.totalSize));//百分比
+//
+//                Log.e("zzn", "totalSize:"+(int)progress.totalSize/100);
+//
+//                Log.e("zzn", progress.currentSize+"");
+//            }
+//
+//            @Override
+//            public void onError(Progress progress) {
+//            }
+//
+//            @Override
+//            public void onFinish(File file, Progress progress) {
+//
+//            }
+//
+//            @Override
+//            public void onRemove(Progress progress) {
+//            }
+//        }).save();
+//        task.fileName("情公寓5-30.mp4"); //设置下载的文件名
+//        task.start(); //开始或继续下载
 
 //        task.restart(); //重新下载
 //        task.pause(); //暂停下载
 //        task.remove(); //删除下载，只删除记录，不删除文件
 //        task.remove(true); //删除下载，同时删除记录和文件
-
 
 
     }
@@ -161,6 +174,65 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
             }
         });
 
+
+        recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                Log.e("xxx", "onScrollStateChanged");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //更改UI；
+                        alphaAnim(myBut,false);
+
+                    }
+                });
+            }
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                Log.e("xxx", "onScrolled");
+
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //更改UI；
+                        alphaAnim(myBut,true);
+
+                    }
+                });
+            }
+        });
+
+//        recyclerView.setOnTouchListener(new View.OnTouchListener() {
+////            @Override
+////            public boolean onTouch(View v, MotionEvent event) {
+////
+////                switch (event.getAction()) {
+////                    case MotionEvent.ACTION_DOWN:
+////                        Log.e("xxx", "按下");
+////                        myBut.setVisibility(View.VISIBLE);
+////                        break;
+////                    case MotionEvent.ACTION_UP:
+////                        Log.e("xxx", "抬起");
+////
+////                        alphaAnim(myBut,false);
+////
+////                        break;
+////                    case MotionEvent.ACTION_MOVE:
+////
+////
+////                        alphaAnim(myBut,true);
+////                        Log.e("xxx", "移动");
+////                        break;
+////                }
+////
+////                return false;
+////            }
+////        });
 
     }
 
@@ -271,5 +343,50 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
         ProgressUtil.hide();
         refreshLayout.finishLoadMore(500);
         refreshLayout.finishRefresh(500);
+    }
+
+    @NeedsPermission({Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.READ_PHONE_STATE,
+    })
+    public void getLocation() {
+
+    }
+
+    @OnClick({R.id.date_ll, R.id.my_but})
+    public void onViewClicked(View view) {
+        switch (view.getId()) {
+            case R.id.date_ll:
+                break;
+            case R.id.my_but:
+                Intent intent = new Intent(new Intent(this, AllDownActivity.class));
+                startActivity(intent);
+
+                break;
+        }
+    }
+
+    /**
+     * View 渐变显示与隐藏
+     */
+    private void alphaAnim(final View view, boolean show){
+        if(show) {
+            view.setAlpha(0);
+            view.setVisibility(View.VISIBLE);
+            view.animate()
+                    .alpha(0.8f)
+                    .setDuration(3000)
+                    .setListener(null);
+        }else {
+            view.animate()
+                    .alpha(0f)
+                    .setDuration(3000)
+                    .setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            view.setVisibility(View.GONE);
+                        }
+                    });
+        }
     }
 }

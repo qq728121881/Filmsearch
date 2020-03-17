@@ -62,4 +62,9 @@ dependencies {
     implementation 'com.blankj:utilcode:1.26.0'
     implementation 'org.greenrobot:eventbus:3.0.0'
 
+    implementation 'com.liulishuo.filedownloader:library:1.7.7'
+
+
+    implementation 'com.github.hotchemi:permissionsdispatcher:2.3.1'
+    annotationProcessor 'com.github.hotchemi:permissionsdispatcher-processor:2.3.1'
 }
