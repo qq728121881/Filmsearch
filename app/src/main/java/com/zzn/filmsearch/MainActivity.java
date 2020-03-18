@@ -180,14 +180,8 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
                 Log.e("xxx", "onScrollStateChanged");
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //更改UI；
-                        alphaAnim(myBut,false);
-
-                    }
-                });
+                myBut.  clearAnimation();
+                myBut.setVisibility(View.VISIBLE);
             }
 
             @Override
@@ -196,14 +190,9 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
                 Log.e("xxx", "onScrolled");
 
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
                         //更改UI；
                         alphaAnim(myBut,true);
 
-                    }
-                });
             }
         });
 

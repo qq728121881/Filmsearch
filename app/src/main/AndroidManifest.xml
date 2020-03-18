@@ -16,8 +16,8 @@
         android:theme="@style/FullScreen"
         android:usesCleartextTraffic="true"
         tools:replace="android:appComponentFactory">
+        <activity android:name=".MyApplication"></activity>
         <activity android:name=".ui.AllDownActivity"></activity>
-        <activity android:name=".MyApplication" />
         <activity
             android:name=".PlayvideoActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
