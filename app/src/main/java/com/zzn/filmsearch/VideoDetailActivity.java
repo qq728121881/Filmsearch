@@ -21,7 +21,6 @@ import com.jcodecraeer.xrecyclerview.XRecyclerView;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.request.GetRequest;
 import com.lzy.okserver.OkDownload;
-import com.lzy.okserver.download.DownloadTask;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshLayout;
 import com.scwang.smartrefresh.layout.listener.OnRefreshListener;
@@ -74,12 +73,12 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
     SmartRefreshLayout refreshLayout;
     @Bind(R.id.date_ll)
     LinearLayout dateLl;
-    @Bind(R.id.speed_rl)
-    RelativeLayout speedRl;
     @Bind(R.id.spinner)
     Spinner spinner;
     @Bind(R.id.upload_but)
     Button uploadBut;
+    @Bind(R.id.speed_tv)
+    TextView speedTv;
     private String url;
     private VideoPlyaListAdapter plyaListAdapter;
 
@@ -94,7 +93,8 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
     private OrientationUtils orientationUtils;
     private String name;
     private int posstion;//多少集
-    private String[] speedBeans;
+    private String[] speedBeans = new String[]{"1.0", "1.2", "1.5", "2.0", "2.5"};
+    ;
     private GSYVideoOptionBuilder gsyVideoOption;
     private String imagesrc;
     private VIdeoMoeld vIdeoMoeld;
@@ -108,6 +108,7 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         setContentView(R.layout.activity_video_detail);
         EventBus.getDefault().register(this);
         detailPlayer = (StandardGSYVideoPlayer) findViewById(R.id.detail_player);
+
         ButterKnife.bind(this);
         Intent intent = getIntent();
         url = intent.getStringExtra("url");
@@ -117,14 +118,14 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         CacheFactory.setCacheManager(ExoPlayerCacheManager.class);
 
 
-        speedBeans = new String[]{"倍速", "1.0", "1.25", "1.5", "2.0", "2.5"};
-
         inview();
 
 
     }
 
     private void inview() {
+        speedTv.setText("倍速");
+
         refreshLayout.setOnRefreshListener(this);
 
         refreshLayout.setEnableAutoLoadMore(false);
@@ -143,13 +144,13 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
+                spinner.setSelection(position);
+                speedTv.setText("倍速: " + speedBeans[position]);
                 if (gsyVideoOption != null) {
-                    if (position == 0) {
+                    String speedBean = speedBeans[position];
 
-                    } else {
-                        gsyVideoOption.setSpeed(1.5f);
-                    }
+                    detailPlayer.setSpeedPlaying(Float.parseFloat(speedBean), true);
+
                 }
 
             }
@@ -240,9 +241,9 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
         }
 
 
-        if(links.size()==1){
+        if (links.size() == 1) {
             posstion = 0;
-        }else {
+        } else {
             posstion = 1;
         }
 
@@ -254,7 +255,6 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
                 contentTv.setText(context);
 
                 plyaListAdapter.setDatas(playurlBeans);
-
 
 
                 String url = playurlBeans.get(0).getUrl();
@@ -463,8 +463,6 @@ public class VideoDetailActivity extends AppCompatActivity implements OnRefreshL
                 } else {
                     Toast.makeText(VideoDetailActivity.this, "已缓存", Toast.LENGTH_LONG).show();
                 }
-
-
 
 
                 break;

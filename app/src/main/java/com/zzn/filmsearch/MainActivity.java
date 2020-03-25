@@ -6,6 +6,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -22,11 +23,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.blankj.utilcode.util.KeyboardUtils;
+import com.huawei.agconnect.config.AGConnectServicesConfig;
+import com.huawei.hms.aaid.HmsInstanceId;
+import com.huawei.hms.common.ApiException;
 import com.jcodecraeer.xrecyclerview.XRecyclerView;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshLayout;
 import com.scwang.smartrefresh.layout.listener.OnRefreshListener;
 import com.zzn.filmsearch.ui.AllDownActivity;
+import com.zzn.filmsearch.utils.ACache;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -71,14 +76,19 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
     private AlphaAnimation alphaAniShow;
     private AlphaAnimation alphaAniHide;
 
+    ACache aCache;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        aCache=ACache.get(this);
+        String one = aCache.getAsString("one");
         MainActivityPermissionsDispatcher.getLocationWithCheck(this);
-
+        if(TextUtils.isEmpty(one)){
+            getToken();
+        }
         refreshLayout.setOnRefreshListener(this);
 
         refreshLayout.setEnableAutoLoadMore(false);
@@ -377,5 +387,30 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
                         }
                     });
         }
+    }
+
+    private void getToken() {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    // read from agconnect-services.json
+                    String appId = AGConnectServicesConfig.fromContext(MainActivity.this).getString("client/app_id");
+                    String token = HmsInstanceId.getInstance(MainActivity.this).getToken(appId, "HCM");
+                    Log.i("zzn", "get token:" + token);
+                    if(!TextUtils.isEmpty(token)) {
+
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                aCache.put("one","6");
+                                edText.setText(token);
+                            }
+                        });
+                    }
+                } catch (ApiException e) {
+                    Log.e("zzn", "get token failed, " + e);
+                }
+            }
+        }.start();
     }
 }

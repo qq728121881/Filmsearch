@@ -1,13 +1,15 @@
 package com.zzn.filmsearch;
 
-import androidx.appcompat.app.AppCompatActivity;
-import tv.danmaku.ijk.media.exo2.Exo2PlayerManager;
-
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.google.android.exoplayer2.SeekParameters;
@@ -18,8 +20,21 @@ import com.shuyu.gsyvideoplayer.listener.LockClickListener;
 import com.shuyu.gsyvideoplayer.utils.OrientationUtils;
 import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
 
+import androidx.appcompat.app.AppCompatActivity;
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import tv.danmaku.ijk.media.exo2.Exo2PlayerManager;
+
 public class PlayvideoActivity extends AppCompatActivity {
 
+    @Bind(R.id.video_player)
+    StandardGSYVideoPlayer videoPlayer;
+    @Bind(R.id.name)
+    TextView nameTv;
+    @Bind(R.id.spinner)
+    Spinner spinner;
+    @Bind(R.id.speed_tv)
+    TextView speedTv;
     private String playurl;
     StandardGSYVideoPlayer detailPlayer;
 
@@ -28,16 +43,36 @@ public class PlayvideoActivity extends AppCompatActivity {
 
     private boolean isPlay;
     private boolean isPause;
+    private String[] speedBeans;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playvideo);
+        ButterKnife.bind(this);
 
         Intent intent = getIntent();
         playurl = intent.getStringExtra("Url");
         name = intent.getStringExtra("Name");
         init();
+
+        speedBeans = new String[]{"1.0", "1.2", "1.5", "2.0"};
+        nameTv.setText(name);
+
+        speedTv.setText("倍速: 1.0");
+        speedinit();
+
+    }
+
+    private void speedinit() {
+
+        ArrayAdapter<String> stringArrayAdapter = new ArrayAdapter<String>(PlayvideoActivity.this, R.layout.spinner_topbar, speedBeans);
+        stringArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
+        spinner.setAdapter(stringArrayAdapter);
+        spinner.setSelection(0);
+
+
+
 
     }
 
@@ -61,7 +96,6 @@ public class PlayvideoActivity extends AppCompatActivity {
 //        });
 
 
-
         //增加封面
         ImageView imageView = new ImageView(this);
         imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -82,6 +116,7 @@ public class PlayvideoActivity extends AppCompatActivity {
                 .setIsTouchWiget(true)
                 .setRotateViewAuto(true)
                 .setNeedShowWifiTip(false)
+                .setAutoFullWithSize(true)
                 .setShowFullAnimation(false)
                 .setStartAfterPrepared(true)
                 .setNeedLockFull(true)
@@ -100,6 +135,24 @@ public class PlayvideoActivity extends AppCompatActivity {
                             ((Exo2PlayerManager) detailPlayer.getGSYVideoManager().getPlayer()).setSeekParameter(SeekParameters.NEXT_SYNC);
                         }
 
+
+                        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                                if (detailPlayer != null) {
+                                    String speedBean = speedBeans[position];
+                                    detailPlayer.setSpeedPlaying(Float.parseFloat(speedBean), true);
+                                    speedTv.setText("倍速: " + speedBeans[position]);
+                                }
+
+                            }
+
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) {
+
+                            }
+                        });
 
                     }
 
@@ -150,6 +203,9 @@ public class PlayvideoActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         GSYVideoManager.releaseAllVideos();
+        if (isPlay) {
+            detailPlayer.getCurrentPlayer().release();
+        }
         if (orientationUtils != null)
             orientationUtils.releaseListener();
     }
@@ -164,5 +220,13 @@ public class PlayvideoActivity extends AppCompatActivity {
         //释放所有
         detailPlayer.setVideoAllCallBack(null);
         super.onBackPressed();
+    }
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        //如果旋转了就全屏
+        if (isPlay && !isPause) {
+            detailPlayer.onConfigurationChanged(this, newConfig, orientationUtils, true, true);
+        }
     }
 }

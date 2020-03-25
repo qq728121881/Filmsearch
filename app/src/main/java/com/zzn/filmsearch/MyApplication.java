@@ -8,7 +8,12 @@ import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
+import android.util.Log;
 
+import com.huawei.agconnect.config.AGConnectServicesConfig;
+import com.huawei.hms.aaid.HmsInstanceId;
+import com.huawei.hms.common.ApiException;
 import com.liulishuo.filedownloader.FileDownloader;
 import com.lzy.okgo.OkGo;
 import com.lzy.okserver.OkDownload;
@@ -31,9 +36,29 @@ public class MyApplication extends MultiDexApplication {
 
         Init();
 
+        getToken();
         FileDownloader.setupOnApplicationOnCreate(this);
 
     }
+
+    private void getToken() {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    // read from agconnect-services.json
+                    String appId = AGConnectServicesConfig.fromContext(MyApplication.this).getString("client/app_id");
+                    String token = HmsInstanceId.getInstance(MyApplication.this).getToken(appId, "HCM");
+                    Log.i("zzn", "get token:" + token);
+                    if(!TextUtils.isEmpty(token)) {
+                    }
+                } catch (ApiException e) {
+                    Log.e("zzn", "get token failed, " + e);
+                }
+            }
+        }.start();
+    }
+
 
     private void Init() {
 
