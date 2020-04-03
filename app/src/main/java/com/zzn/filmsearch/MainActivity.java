@@ -47,6 +47,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import okhttp3.HttpUrl;
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.RuntimePermissions;
 
@@ -248,7 +249,7 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
                 }
                 Element body = doc.body();
 
-                getAnalysis(body);
+                getAnalysis(body,"1");
 
             }
         }).start();
@@ -256,12 +257,30 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
 
     }
 
-    private void getAnalysis(Element body) {
+    int a=1;
+    private void getAnalysis(Element body,String type) {
 
         Elements xing_vb = body.getElementsByClass("xing_vb");
 
         //获取HTML页面中的所有链接
         Elements links = xing_vb.select("a[href]");
+
+        if(type.equals("0")){
+            if(links.size()==0){
+                a=a+1;
+                if(a==2){
+                    HttpUrls.url="http://www.zuidazy2.net";
+                }else if(a==3){
+                    HttpUrls.url="http://www.zuidazy3.net";
+                }else if(a==4){
+                    HttpUrls.url="http://www.zuidazy4.net";
+                }else if(a==5){
+                    HttpUrls.url="http://www.zuidazy5.net";
+                }
+                getHomedate();
+                return;
+            }
+        }
 
 
         for (Element link : links) {
@@ -317,6 +336,13 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
 
 
         Log.e("zzn", "刷新");
+
+
+        getHomedate();
+    }
+
+    private void getHomedate() {
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -331,7 +357,7 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
                 }
                 Element body = doc.body();
 
-                getAnalysis(body);
+                getAnalysis(body,"0");
 
             }
         }).start();
@@ -403,7 +429,7 @@ public class MainActivity extends AppCompatActivity implements TextWatcher, OnRe
                         runOnUiThread(new Runnable() {
                             public void run() {
                                 aCache.put("one","6");
-                                edText.setText(token);
+//                                edText.setText(token);
                             }
                         });
                     }
